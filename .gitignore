@@ -17,6 +17,7 @@ htmlcov/
 
 # ML Model Checkpoints & Large Data
 *.pth
+!strategic_agent_weights.pth
 *.pt
 *.h5
 *.hdf5
@@ -42,3 +43,4 @@ desktop.ini
 
 # Custom Project Ignores
 *.pth
+!strategic_agent_weights.pth

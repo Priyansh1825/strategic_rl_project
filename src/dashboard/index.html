@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tactical Strategic RL // Digital Twin Operator Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --card-bg: rgba(15, 23, 42, 0.75);
+      --card-border: rgba(56, 189, 248, 0.2);
+      --accent-cyan: #00f2fe;
+      --accent-blue: #4facfe;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --grid-empty: #0f172a;
+      --grid-agent: #00f2fe;
+      --grid-target: #10b981;
+      --grid-threat: #f43f5e;
+      --grid-obstacle: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(244, 63, 94, 0.06) 0%, transparent 40%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(10, 15, 26, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      color: #07090e;
+      font-size: 20px;
+    }
+
+    .brand-title h1 {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #fff, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-title p {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--accent-green);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 10px var(--accent-green);
+      animation: pulse 1.6s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Main Container Layout */
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 340px 1fr 380px;
+      gap: 24px;
+      padding: 24px 32px;
+      flex: 1;
+    }
+
+    @media (max-width: 1280px) {
+      .dashboard-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .glass-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 22px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--accent-cyan);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+      padding-bottom: 10px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .stat-box span {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-box p {
+      font-size: 20px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 4px;
+    }
+
+    .reward-positive { color: var(--accent-green); }
+    .reward-negative { color: var(--accent-rose); }
+
+    /* Center Grid Canvas */
+    .canvas-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    #gridCanvas {
+      background: #090d16;
+      border: 2px solid var(--card-border);
+      border-radius: 18px;
+      box-shadow: 0 0 35px rgba(0, 242, 254, 0.15);
+      cursor: crosshair;
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 20px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #07090e;
+      border: none;
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.35);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 28px rgba(0, 242, 254, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: var(--accent-rose);
+    }
+
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.3);
+      box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
+    }
+
+    /* Q-Value Radar Meters */
+    .radar-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .radar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .radar-header {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+
+    .radar-name {
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .radar-val {
+      color: var(--accent-cyan);
+      font-weight: 700;
+    }
+
+    .radar-bar-bg {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 9999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .radar-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+      border-radius: 9999px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+    }
+
+    .radar-bar-fill.active-best {
+      background: linear-gradient(90deg, #10b981, #34d399);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+    }
+
+    /* Mission Logs Terminal */
+    .log-terminal {
+      background: #05070c;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 14px;
+      height: 320px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .log-entry {
+      line-height: 1.5;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .log-time { color: var(--text-muted); font-size: 10px; margin-right: 6px; }
+    .log-info { color: #38bdf8; }
+    .log-warn { color: var(--accent-amber); }
+    .log-danger { color: var(--accent-rose); font-weight: 700; }
+    .log-success { color: var(--accent-green); font-weight: 700; }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      justify-content: space-around;
+      padding: 10px;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-box {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    /* Speed Slider */
+    .slider-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    input[type=range] {
+      accent-color: var(--accent-cyan);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">RL</div>
+      <div class="brand-title">
+        <h1>TACTICAL RL // DIGITAL TWIN OPERATOR CONSOLE</h1>
+        <p>Deep Q-Network Spatial Mission Navigation Engine</p>
+      </div>
+    </div>
+    <div class="header-badges">
+      <div class="status-pill">
+        <div class="pulse-dot"></div>
+        <span id="systemStatus">AI AGENT ONLINE</span>
+      </div>
+      <div class="status-pill" style="border-color: rgba(56, 189, 248, 0.3); color: #38bdf8;">
+        <span>DQN (PYTORCH)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="dashboard-container">
+
+    <!-- Left Panel: Telemetry & Status -->
+    <section class="glass-card">
+      <div class="card-title">
+        <span>Mission Telemetry</span>
+        <span id="stepCounter" style="color: var(--accent-cyan);">STEP 0/25</span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <span>Agent Pos</span>
+          <p id="agentPos">[0, 0]</p>
+        </div>
+        <div class="stat-box">
+          <span>Target Pos</span>
+          <p id="targetPos">[4, 4]</p>
+        </div>
+        <div class="stat-box">
+          <span>Step Reward</span>
+          <p id="stepReward">0.0</p>
+        </div>
+        <div class="stat-box">
+          <span>Total Reward</span>
+          <p id="totalReward" class="reward-positive">0.0</p>
+        </div>
+      </div>
+
+      <div class="card-title" style="margin-top: 10px;">
+        <span>Tactical Legend</span>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-box" style="background: var(--grid-agent);"></div>Agent</div>
+        <div class="legend-item"><div class="legend-box" style="background: var(--grid-target);"></div>Target</div>
+        <div class="legend-item"><div class="legend-box" style="background: var(--grid-threat);"></div>Threat</div>
+        <div class="legend-item"><div class="legend-box" style="background: var(--grid-obstacle);"></div>Block</div>
+      </div>
+
+      <div class="card-title" style="margin-top: 10px;">
+        <span>Mission Parameters</span>
+      </div>
+      <div class="slider-group">
+        <span>Simulation Speed:</span>
+        <input type="range" id="speedSlider" min="50" max="600" value="250" step="50">
+        <span id="speedValue">250ms</span>
+      </div>
+
+      <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.5; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
+        Interactive Grid: Click cells on the tactical map to inspect coordinates or switch obstacles and threat zones dynamically.
+      </div>
+    </section>
+
+    <!-- Center Panel: Live 2D Grid Canvas & Controls -->
+    <section class="glass-card canvas-container">
+      <div class="card-title" style="width: 100%;">
+        <span>Tactical Spatial Grid (Digital Twin)</span>
+        <span id="missionEvent" style="color: #10b981;">STATUS: READY</span>
+      </div>
+
+      <canvas id="gridCanvas" width="460" height="460"></canvas>
+
+      <div class="controls-bar">
+        <button id="btnAutoMission" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          RUN AUTONOMOUS MISSION
+        </button>
+        <button id="btnStep" class="btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          STEP AI
+        </button>
+        <button id="btnReset" class="btn btn-danger">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          RESET
+        </button>
+      </div>
+    </section>
+
+    <!-- Right Panel: Q-Value Radar & Mission Event Logs -->
+    <section class="glass-card">
+      <div class="card-title">
+        <span>Action Q-Value Radar</span>
+        <span id="bestActionLabel" style="color: #34d399;">MOVE RIGHT</span>
+      </div>
+
+      <div class="radar-list">
+        <div class="radar-item">
+          <div class="radar-header">
+            <span class="radar-name">&uarr; MOVE UP</span>
+            <span id="qVal0" class="radar-val">0.00</span>
+          </div>
+          <div class="radar-bar-bg"><div id="bar0" class="radar-bar-fill"></div></div>
+        </div>
+
+        <div class="radar-item">
+          <div class="radar-header">
+            <span class="radar-name">&darr; MOVE DOWN</span>
+            <span id="qVal1" class="radar-val">0.00</span>
+          </div>
+          <div class="radar-bar-bg"><div id="bar1" class="radar-bar-fill"></div></div>
+        </div>
+
+        <div class="radar-item">
+          <div class="radar-header">
+            <span class="radar-name">&larr; MOVE LEFT</span>
+            <span id="qVal2" class="radar-val">0.00</span>
+          </div>
+          <div class="radar-bar-bg"><div id="bar2" class="radar-bar-fill"></div></div>
+        </div>
+
+        <div class="radar-item">
+          <div class="radar-header">
+            <span class="radar-name">&rarr; MOVE RIGHT</span>
+            <span id="qVal3" class="radar-val">0.00</span>
+          </div>
+          <div class="radar-bar-bg"><div id="bar3" class="radar-bar-fill"></div></div>
+        </div>
+      </div>
+
+      <div class="card-title" style="margin-top: 10px;">
+        <span>Mission Log Stream</span>
+      </div>
+
+      <div id="logTerminal" class="log-terminal">
+        <div class="log-entry"><span class="log-time">[00:00:00]</span><span class="log-info">Tactical RL Engine loaded. Standing by for deployment.</span></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const GRID_SIZE = 5;
+    const canvas = document.getElementById('gridCanvas');
+    const ctx = canvas.getContext('2d');
+    const cellSize = canvas.width / GRID_SIZE;
+
+    let agentPos = [0, 0];
+    let targetPos = [4, 4];
+    let threats = [[2, 2], [1, 3]];
+    let obstacles = [[1, 1], [3, 2]];
+    let totalReward = 0.0;
+    let stepCount = 0;
+    let autoRunning = false;
+    let missionTrail = [];
+
+    const actionNames = ["Move UP", "Move DOWN", "Move LEFT", "Move RIGHT"];
+
+    // Speed slider
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValue = document.getElementById('speedValue');
+    speedSlider.addEventListener('input', (e) => {
+      speedValue.innerText = `${e.target.value}ms`;
+    });
+
+    function logMessage(text, type = 'info') {
+      const term = document.getElementById('logTerminal');
+      const timeStr = new Date().toTimeString().split(' ')[0];
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="log-time">[${timeStr}]</span><span class="log-${type}">${text}</span>`;
+      term.appendChild(entry);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function drawGrid() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Grid background
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const x = c * cellSize;
+          const y = r * cellSize;
+
+          ctx.fillStyle = '#0b1120';
+          ctx.fillRect(x, y, cellSize, cellSize);
+
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, cellSize, cellSize);
+        }
+      }
+
+      // Draw Obstacles
+      obstacles.forEach(([r, c]) => {
+        const x = c * cellSize + 6;
+        const y = r * cellSize + 6;
+        ctx.fillStyle = '#334155';
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x, y, cellSize - 12, cellSize - 12, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 12px "JetBrains Mono"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('BLOCK', x + (cellSize - 12) / 2, y + (cellSize - 12) / 2);
+      });
+
+      // Draw Threat Zones
+      threats.forEach(([r, c]) => {
+        const x = c * cellSize + 6;
+        const y = r * cellSize + 6;
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.2)';
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x, y, cellSize - 12, cellSize - 12, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#f43f5e';
+        ctx.font = 'bold 13px "JetBrains Mono"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('DANGER', x + (cellSize - 12) / 2, y + (cellSize - 12) / 2);
+      });
+
+      // Draw Target / Objective
+      {
+        const [tr, tc] = targetPos;
+        const x = tc * cellSize + 8;
+        const y = tr * cellSize + 8;
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(x, y, cellSize - 16, cellSize - 16, 14);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 13px "JetBrains Mono"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('TARGET', x + (cellSize - 16) / 2, y + (cellSize - 16) / 2);
+      }
+
+      // Draw Motion Trail
+      if (missionTrail.length > 1) {
+        ctx.strokeStyle = 'rgba(0, 242, 254, 0.4)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        missionTrail.forEach(([r, c], idx) => {
+          const cx = c * cellSize + cellSize / 2;
+          const cy = r * cellSize + cellSize / 2;
+          if (idx === 0) ctx.moveTo(cx, cy);
+          else ctx.lineTo(cx, cy);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Draw Agent Drone
+      {
+        const [ar, ac] = agentPos;
+        const cx = ac * cellSize + cellSize / 2;
+        const cy = ar * cellSize + cellSize / 2;
+        const radius = cellSize * 0.32;
+
+        ctx.fillStyle = 'rgba(0, 242, 254, 0.3)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * 1.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#00f2fe';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#07090e';
+        ctx.font = '800 13px "JetBrains Mono"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('AI', cx, cy);
+      }
+    }
+
+    function updateRadar(qValues, bestAction) {
+      if (!qValues || qValues.length < 4) return;
+      const minQ = Math.min(...qValues);
+      const maxQ = Math.max(...qValues);
+      const range = (maxQ - minQ) || 1.0;
+
+      for (let i = 0; i < 4; i++) {
+        const val = qValues[i];
+        const pct = Math.max(8, Math.min(100, ((val - minQ) / range) * 100));
+        document.getElementById(`qVal${i}`).innerText = val.toFixed(2);
+        const bar = document.getElementById(`bar${i}`);
+        bar.style.width = `${pct}%`;
+        if (i === bestAction) {
+          bar.classList.add('active-best');
+        } else {
+          bar.classList.remove('active-best');
+        }
+      }
+      document.getElementById('bestActionLabel').innerText = actionNames[bestAction];
+    }
+
+    async function resetMission() {
+      try {
+        const res = await fetch('/api/reset', { method: 'POST' });
+        const data = await res.json();
+        agentPos = data.info.agent_pos;
+        targetPos = data.info.target_pos;
+        threats = data.info.threats;
+        obstacles = data.info.obstacles;
+        stepCount = 0;
+        totalReward = 0.0;
+        missionTrail = [[...agentPos]];
+
+        document.getElementById('stepCounter').innerText = `STEP ${stepCount}/25`;
+        document.getElementById('agentPos').innerText = JSON.stringify(agentPos);
+        document.getElementById('targetPos').innerText = JSON.stringify(targetPos);
+        document.getElementById('stepReward').innerText = '0.0';
+        document.getElementById('totalReward').innerText = '0.0';
+        document.getElementById('missionEvent').innerText = 'STATUS: DEPLOYED';
+        document.getElementById('missionEvent').style.color = '#10b981';
+
+        updateRadar(data.q_values, data.recommended_action);
+        drawGrid();
+        logMessage(`Mission environment reset to baseline. Agent deployed at [${agentPos}].`, 'info');
+      } catch (err) {
+        logMessage(`Failed to reset mission: ${err.message}`, 'danger');
+      }
+    }
+
+    async function stepAI() {
+      try {
+        const res = await fetch('/api/step', { method: 'POST' });
+        const data = await res.json();
+
+        agentPos = data.info.agent_pos;
+        missionTrail.push([...agentPos]);
+        stepCount = data.info.step;
+        totalReward += data.reward;
+
+        document.getElementById('stepCounter').innerText = `STEP ${stepCount}/25`;
+        document.getElementById('agentPos').innerText = JSON.stringify(agentPos);
+        document.getElementById('stepReward').innerText = `${data.reward > 0 ? '+' : ''}${data.reward.toFixed(1)}`;
+        document.getElementById('totalReward').innerText = `${totalReward > 0 ? '+' : ''}${totalReward.toFixed(1)}`;
+        document.getElementById('missionEvent').innerText = data.info.event;
+
+        let logType = 'info';
+        if (data.reward === 100.0) {
+          logType = 'success';
+          document.getElementById('missionEvent').style.color = '#10b981';
+          logMessage(`OBJECTIVE SECURED! Total Reward: ${totalReward.toFixed(1)} in ${stepCount} steps.`, 'success');
+        } else if (data.reward === -10.0) {
+          logType = 'danger';
+          document.getElementById('missionEvent').style.color = '#f43f5e';
+          logMessage(`THREAT ALERT! Agent penetrated hostile zone at [${agentPos}].`, 'danger');
+        } else if (data.reward === -5.0) {
+          logType = 'warn';
+          document.getElementById('missionEvent').style.color = '#f59e0b';
+          logMessage(`COLLISION DETECTED! Perimeter impact.`, 'warn');
+        } else {
+          logMessage(`Maneuver: ${data.action_name} -> Pos [${agentPos}], Q=${data.q_values[data.action_taken].toFixed(1)}`, 'info');
+        }
+
+        updateRadar(data.q_values, data.next_recommended_action);
+        drawGrid();
+        return data.done || data.truncated;
+      } catch (err) {
+        logMessage(`Error stepping AI: ${err.message}`, 'danger');
+        return true;
+      }
+    }
+
+    async function runAutoMission() {
+      if (autoRunning) {
+        autoRunning = false;
+        document.getElementById('btnAutoMission').innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          RUN AUTONOMOUS MISSION
+        `;
+        return;
+      }
+
+      autoRunning = true;
+      document.getElementById('btnAutoMission').innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        PAUSE MISSION
+      `;
+
+      logMessage("Autonomous mission execution initiated...", 'info');
+
+      while (autoRunning) {
+        const isFinished = await stepAI();
+        if (isFinished) {
+          autoRunning = false;
+          document.getElementById('btnAutoMission').innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            RUN AUTONOMOUS MISSION
+          `;
+          break;
+        }
+        const delay = parseInt(speedSlider.value, 10);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+
+    // Attach Event Listeners
+    document.getElementById('btnReset').addEventListener('click', resetMission);
+    document.getElementById('btnStep').addEventListener('click', stepAI);
+    document.getElementById('btnAutoMission').addEventListener('click', runAutoMission);
+
+    // Initial boot
+    resetMission();
+  </script>
+</body>
+</html>
