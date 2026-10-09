@@ -50,6 +50,33 @@ class MapConfig(BaseModel):
     obstacles: Optional[List[List[int]]] = None
 
 
+def compute_preview_path() -> List[List[int]]:
+    """Calculates agent path without altering live state."""
+    saved_agent_pos = list(env.agent_pos)
+    saved_step = env.step_count
+
+    path = [list(env.agent_pos)]
+    curr_state = env.grid.copy()
+    visited = {tuple(env.agent_pos)}
+
+    for _ in range(env.max_steps):
+        action = int(agent.act(curr_state, evaluate=True))
+        next_state, reward, done, truncated, _ = env.step(action)
+        curr_pos = tuple(env.agent_pos)
+        path.append(list(env.agent_pos))
+        curr_state = next_state
+
+        if done or truncated or curr_pos in visited:
+            break
+        visited.add(curr_pos)
+
+    # Restore environment state
+    env.agent_pos = list(saved_agent_pos)
+    env.step_count = saved_step
+    env.grid = env._build_grid_state()
+    return path
+
+
 @app.get("/", response_class=HTMLResponse)
 def serve_dashboard():
     """Serves the Tactical RL Operator Live Dashboard."""
@@ -74,6 +101,42 @@ def get_status() -> Dict[str, Any]:
         "threats": [list(t) for t in env.threats],
         "obstacles": [list(o) for o in env.obstacles],
         "step_count": env.step_count,
+        "planned_path": compute_preview_path(),
+    }
+
+
+@app.post("/api/update-map")
+def update_map(config: MapConfig) -> Dict[str, Any]:
+    """Dynamically applies custom obstacles, threats, agent, and target."""
+    start = tuple(config.agent_pos) if config.agent_pos else None
+    target = tuple(config.target_pos) if config.target_pos else None
+    threats = (
+        [tuple(t) for t in config.threats]
+        if config.threats is not None else None
+    )
+    obstacles = (
+        [tuple(o) for o in config.obstacles]
+        if config.obstacles is not None else None
+    )
+
+    state, info = env.reset(
+        start_pos=start,
+        target_pos=target,
+        threats=threats,
+        obstacles=obstacles,
+    )
+    q_vals = agent.get_q_values(state)
+    best_action = int(agent.act(state, evaluate=True))
+    preview_path = compute_preview_path()
+
+    return {
+        "status": "UPDATED",
+        "state": state.tolist(),
+        "info": info,
+        "q_values": q_vals,
+        "recommended_action": best_action,
+        "action_name": TacticalGridEnv.ACTION_NAMES[best_action],
+        "planned_path": preview_path,
     }
 
 
@@ -86,11 +149,11 @@ def reset_mission(config: Optional[MapConfig] = None) -> Dict[str, Any]:
     )
     threats = (
         [tuple(t) for t in config.threats]
-        if config and config.threats else None
+        if config and config.threats is not None else None
     )
     obstacles = (
         [tuple(o) for o in config.obstacles]
-        if config and config.obstacles else None
+        if config and config.obstacles is not None else None
     )
 
     state, info = env.reset(
@@ -101,6 +164,7 @@ def reset_mission(config: Optional[MapConfig] = None) -> Dict[str, Any]:
     )
     q_vals = agent.get_q_values(state)
     best_action = int(agent.act(state, evaluate=True))
+    preview_path = compute_preview_path()
 
     return {
         "state": state.tolist(),
@@ -108,6 +172,7 @@ def reset_mission(config: Optional[MapConfig] = None) -> Dict[str, Any]:
         "q_values": q_vals,
         "recommended_action": best_action,
         "action_name": TacticalGridEnv.ACTION_NAMES[best_action],
+        "planned_path": preview_path,
     }
 
 
@@ -122,6 +187,7 @@ def step_mission(action: Optional[int] = None) -> Dict[str, Any]:
     next_state, reward, done, truncated, info = env.step(action)
     next_q_vals = agent.get_q_values(next_state)
     next_best_action = int(agent.act(next_state, evaluate=True))
+    preview_path = compute_preview_path()
 
     return {
         "action_taken": action,
@@ -134,6 +200,7 @@ def step_mission(action: Optional[int] = None) -> Dict[str, Any]:
         "q_values": next_q_vals,
         "next_recommended_action": next_best_action,
         "next_action_name": TacticalGridEnv.ACTION_NAMES[next_best_action],
+        "planned_path": preview_path,
     }
 
 
@@ -211,6 +278,7 @@ async def live_mission_stream(websocket: WebSocket):
                         "event": info.get("event", "MOVE_OK"),
                         "q_values": q_vals,
                         "grid": next_state.tolist(),
+                        "planned_path": compute_preview_path(),
                     }
                     await websocket.send_text(json.dumps(payload))
                     state = next_state

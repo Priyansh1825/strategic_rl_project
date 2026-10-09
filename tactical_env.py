@@ -88,17 +88,19 @@ class TacticalGridEnv:
         obstacles: Optional[List[Tuple[int, int]]] = None,
     ) -> Tuple[np.ndarray, Dict[str, Any]]:
         """Reset the environment to start a new mission."""
-        self.agent_pos = list(start_pos or self.default_start)
-        self.target_pos = tuple(target_pos or self.default_target)
+        if start_pos is not None:
+            self.default_start = tuple(start_pos)
+        if target_pos is not None:
+            self.default_target = tuple(target_pos)
         if threats is not None:
-            self.threats = [tuple(t) for t in threats]
-        else:
-            self.threats = [tuple(t) for t in self.default_threats]
-
+            self.default_threats = [tuple(t) for t in threats]
         if obstacles is not None:
-            self.obstacles = [tuple(o) for o in obstacles]
-        else:
-            self.obstacles = [tuple(o) for o in self.default_obstacles]
+            self.default_obstacles = [tuple(o) for o in obstacles]
+
+        self.agent_pos = list(self.default_start)
+        self.target_pos = tuple(self.default_target)
+        self.threats = [tuple(t) for t in self.default_threats]
+        self.obstacles = [tuple(o) for o in self.default_obstacles]
 
         self.step_count = 0
         self.grid = self._build_grid_state()
